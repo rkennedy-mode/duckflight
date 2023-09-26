@@ -1,0 +1,7 @@
+# IntelliJ IDEA Artifacts
+.idea/
+*.iml
+
+# Maven Artifacts
+.mvn/
+target/
