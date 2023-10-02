@@ -1,58 +1,63 @@
 package com.mode.ryankennedy.duckflight;
 
-import com.mode.ryankennedy.duckflight.authenticator.MyCallHeaderAuthenticator;
-import com.mode.ryankennedy.duckflight.producer.MyFlightSqlProducer;
+import com.mode.ryankennedy.duckflight.authenticator.BearerTokenCallHeaderAuthenticator;
+import com.mode.ryankennedy.duckflight.producer.JdbcFlightSqlProducer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.apache.arrow.flight.FlightServer;
 import org.apache.arrow.flight.Location;
 import org.apache.arrow.memory.RootAllocator;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
+public class Server implements AutoCloseable {
+    private final String connectionString;
+    private RootAllocator rootAllocator;
+    private FlightServer flightServer;
+    private JdbcFlightSqlProducer producer;
 
-public class Server {
-    private static final String TOKEN_QUERY_STRING = "token=token_1&useEncryption=false";
+    public static Server started(String connectionString) {
+        var server = new Server(connectionString);
+        server.start();
+        return server;
+    }
+
+    private Server(String connectionString) {
+        this.connectionString = connectionString;
+    }
 
     @WithSpan
-    public static void main(String[] args) {
+    private void start() {
+        rootAllocator = new RootAllocator();
+
         // Configure the Arrow Flight (gRPC) server to bind to some available port on 0.0.0.0.
         var location = Location.forGrpcInsecure("0.0.0.0", 0);
-        try (var producer = new MyFlightSqlProducer(location);
-             var flightServer = FlightServer.builder()
-                     .allocator(new RootAllocator())
-                     .location(location)
-                     .headerAuthenticator(new MyCallHeaderAuthenticator())
-                     .producer(producer)
-                     .build()) {
+
+        try {
+            producer = new JdbcFlightSqlProducer(location, connectionString, rootAllocator);
+            flightServer = FlightServer.builder()
+                    .allocator(rootAllocator)
+                    .location(location)
+                    .headerAuthenticator(new BearerTokenCallHeaderAuthenticator())
+                    .producer(producer)
+                    .build();
+
             // Start the server
             flightServer.start();
-
-            // Note the bound host+port for anyone listening.
-            System.out.printf("Flight Server listening: %s%n", flightServer.getLocation().getUri());
-
-            // Issue a SQL query to the Arrow Flight server
-            query(flightServer.getLocation());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    @WithSpan
-    private static void query(Location serverLocation) {
-        // Generate a JDBC connection using the Arrow Flight SQL JDBC driver
-        try (var connection = DriverManager.getConnection("jdbc:arrow-flight-sql://%s:%d/?%s".formatted(
-                serverLocation.getUri().getHost(),
-                serverLocation.getUri().getPort(),
-                TOKEN_QUERY_STRING))) {
-            try (var statement = connection.createStatement();
-                 // Attempt to query the information schema
-                 var results = statement.executeQuery("SELECT * FROM information_schema.tables")) {
-                while (results.next()) {
-                    // Iterate through the results
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    public Location getLocation() {
+        return flightServer.getLocation();
+    }
+
+    @Override
+    public void close() throws Exception {
+        stop();
+    }
+
+    private void stop() throws Exception {
+        flightServer.close();
+        producer.close();
+        rootAllocator.close();
     }
 }

@@ -12,9 +12,42 @@
         <maven.compiler.source>20</maven.compiler.source>
         <maven.compiler.target>20</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <arrow.version>13.0.0</arrow.version>
+<!--        <arrow.version>14.0.0-SNAPSHOT</arrow.version>-->
     </properties>
 
+<!--    Uncomment this if you have a locally built version of 14.0.0-SNAPSHOT to -->
+<!--    work around the OpenTelemetry auto-instrumentation issues with shading   -->
+<!--    in 13.0.0.                                                               -->
+<!--    https://github.com/apache/arrow/issues/37892#issuecomment-1737968363     -->
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>arrow-local</id>-->
+<!--            <url>file://${project.basedir}/../arrow/.maven_repo</url>-->
+<!--            <snapshots/>-->
+<!--        </repository>-->
+<!--    </repositories>-->
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.10.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.2-jre</version>
+        </dependency>
+
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-instrumentation-annotations</artifactId>
@@ -24,18 +57,24 @@
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>flight-sql</artifactId>
-            <version>13.0.0</version>
+            <version>${arrow.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>flight-sql-jdbc-driver</artifactId>
-            <version>13.0.0</version>
+            <version>${arrow.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.duckdb</groupId>
             <artifactId>duckdb_jdbc</artifactId>
-            <version>0.8.1</version>
+            <version>0.9.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
