@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mode.ryankennedy</groupId>
-    <artifactId>apachearrowflightsql4j</artifactId>
+    <artifactId>duckflight</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
