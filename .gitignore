@@ -3,5 +3,4 @@
 *.iml
 
 # Maven Artifacts
-.mvn/
 target/
