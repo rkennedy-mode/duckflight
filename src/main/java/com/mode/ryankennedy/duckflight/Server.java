@@ -13,6 +13,11 @@ public class Server implements AutoCloseable {
     private FlightServer flightServer;
     private JdbcFlightSqlProducer producer;
 
+    // Configure the Arrow Flight (gRPC) server to bind to port 3000 on 0.0.0.0.
+    public static String HOST = "0.0.0.0";
+    public static int PORT = 3000;
+    public static Location LOCATION = Location.forGrpcInsecure(HOST, PORT);
+
     public static Server started(String connectionString) {
         var server = new Server(connectionString);
         server.start();
@@ -27,27 +32,21 @@ public class Server implements AutoCloseable {
     private void start() {
         rootAllocator = new RootAllocator();
 
-        // Configure the Arrow Flight (gRPC) server to bind to some available port on 0.0.0.0.
-        var location = Location.forGrpcInsecure("0.0.0.0", 0);
-
         try {
-            producer = new JdbcFlightSqlProducer(location, connectionString, rootAllocator);
+            producer = new JdbcFlightSqlProducer(LOCATION, connectionString, rootAllocator);
             flightServer = FlightServer.builder()
                     .allocator(rootAllocator)
-                    .location(location)
+                    .location(LOCATION)
                     .headerAuthenticator(new BearerTokenCallHeaderAuthenticator())
                     .producer(producer)
                     .build();
 
             // Start the server
-            flightServer.start();
+            var server = flightServer.start();
+            server.awaitTermination();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Location getLocation() {
-        return flightServer.getLocation();
     }
 
     @Override

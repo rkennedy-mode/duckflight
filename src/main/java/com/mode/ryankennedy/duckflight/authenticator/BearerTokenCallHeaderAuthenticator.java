@@ -13,6 +13,7 @@ public class BearerTokenCallHeaderAuthenticator implements CallHeaderAuthenticat
     public AuthResult authenticate(CallHeaders incomingHeaders) {
         var bearerToken = AuthUtilities.getValueFromAuthHeader(incomingHeaders, Auth2Constants.BEARER_PREFIX);
         if (bearerToken != null) {
+            System.out.println("Received bearer token: " + bearerToken);
             // TODO: Utilize a cache to minimize calls to webapp
             // TODO: Make the call to webapp to validate
             return () -> bearerToken;
